@@ -1,0 +1,8 @@
+table { border-collapse:collapse; }
+table th { background-color:#EFEFEF;}
+table thead th:first-child { color:grey; }
+table th, table td {border-bottom: 1px solid silver; border-right: 1px solid silver;}
+
+.alterColor1 { color: blue }
+.alterColor2 { color: green }
+.alterColor3 { color: maroon }
