@@ -1,7 +1,7 @@
 <?php
 	require __DIR__ . '/../kafka-php/src/Kafka/Kafka.php';
 	header("Cache-Control: max-age=10, no-store"); //must-revalidate
-	
+
 	$connectionString = urldecode($_SERVER['QUERY_STRING']);
 	$zk = new ZooKeeper($connectionString);
 	
