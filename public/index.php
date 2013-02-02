@@ -20,8 +20,8 @@ require '../gridportal/src/.php';
 	<hr/>	
 	<?php foreach($_GET as $key => $zkConnection) : ?>	
 	<h3>'<?php echo $key?>' kafka cluster</h3>
-	<g:portlet id="<?php echo $zkConnection?>" fragment="topicsTable"/>
-	<g:portlet id="<?php echo $zkConnection?>" fragment="consumerList"/>
+	<g:portlet class="ajax" id="<?php echo $zkConnection?>" fragment="topicsTable"/>
+	<g:portlet class="ajax" id="<?php echo $zkConnection?>" fragment="consumerList"/>
 	<?php endforeach;?>		
 </body>
 </html>
