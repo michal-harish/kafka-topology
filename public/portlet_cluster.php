@@ -4,7 +4,9 @@
 	$connectionString = urldecode($_SERVER['QUERY_STRING']);
 	$zk = new ZooKeeper($connectionString);
 	
-	$consumers =  array_fill_keys(@$zk->getChildren('/consumers'), array());
+	if ($consumerIds = @$zk->getChildren('/consumers')) {
+		$consumers =  array_fill_keys($consumerIds, array());
+	} else $consumers = array();
 	
 	if (isset($_SERVER['HTTP_PORTLET_AJAX'])) {
 		class watcher {
@@ -27,7 +29,7 @@
 	header("Cache-Control: max-age=0, no-store");
 	
 	$brokers = array();
-	if ($brokerIds = $zk->getChildren('/brokers/ids'))
+	if ($brokerIds = @$zk->getChildren('/brokers/ids'))
 	{		
 		foreach($brokerIds as $brokerId)
 		{
