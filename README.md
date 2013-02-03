@@ -9,7 +9,7 @@ Quick Start
 ===========
 1. assuming http server + php is running on localhost:80 with document root in /var/www 
 2. you will need php-zookeeper extension (https://github.com/andreiz/php-zookeeper)
-3. git clone git://github.com/michal-harish/kafka-topology.git into /var/www/kafka-topology
+3. git clone --recursive git://github.com/michal-harish/kafka-topology.git into /var/www/kafka-topology
 4. http://localhost/kafka-topology/public/?Local=localhost:2181
 
 NOTE: You can monitor mutliple clusters by adding &<name>=<zk-connect-string> at the end of the url
