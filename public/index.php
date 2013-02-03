@@ -1,6 +1,6 @@
 <?php
-$uriBase = array_shift(preg_split("/[/\?]+/", $_SERVER['REQUEST_URI']));
 require '../gridportal/src/.php';
+$uriBase = array_shift(preg_split('/\/*\?/', $_SERVER['REQUEST_URI']));
 ?><!DOCTYPE html>
 <html xmlns:g="portal/portlets.xsd">
 <head>
