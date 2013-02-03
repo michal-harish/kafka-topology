@@ -1,6 +1,9 @@
 <?php
 require '../gridportal/src/.php';
 $uriBase = array_shift(preg_split('/\/*\?/', $_SERVER['REQUEST_URI']));
+if (!$_SERVER['QUERY_STRING']) {
+	exit(header("Location: ?Local=localhost:2181"));
+}
 ?><!DOCTYPE html>
 <html xmlns:g="portal/portlets.xsd">
 <head>
