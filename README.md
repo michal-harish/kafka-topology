@@ -19,7 +19,5 @@ should update without refreshing the page if there is a rebalance.
 
 BackLog
 =======
-- resolve integer resolution (offsets request from kafka resturns hex zk returns decimgal strings)
-- detect whether consumer each is "active" by looking how far behind the latest offsets of the respective kafka partition it is.
 - implement live scan of consumer-topic-partition ownership (ephemeral zk nodes /consumers/owners)
 - store the watch status in file for reliable change detection 

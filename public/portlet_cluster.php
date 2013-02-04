@@ -51,10 +51,12 @@
 				for($partition=0; $partition<$brokerPartitionCount; $partition++)
 				{
 					$partitionId = "{$brokerId}-{$partition}";
+					$smallest = array_shift($kafkaConsumers[$brokerId]->offsets($topicName,$partition, \Kafka\Kafka::OFFSETS_EARLIEST));
+					$largest = array_shift($kafkaConsumers[$brokerId]->offsets($topicName,$partition, \Kafka\Kafka::OFFSETS_LATEST));
 					$partitionStatus = array(
 						'id' => $partitionId,
-						'earliest' => array_shift($kafkaConsumers[$brokerId]->offsets($topicName,$partition, \Kafka\Kafka::OFFSETS_EARLIEST)),
-					    'latest' => array_shift($kafkaConsumers[$brokerId]->offsets($topicName,$partition, \Kafka\Kafka::OFFSETS_LATEST)),
+						'smallest' => $smallest->__toString(),
+					    'largest' => $largest->__toString(),
 					);
 					$topics[$topicName][$partitionId] = $partitionStatus;
 					$sections[$topicName][$brokerId][$partition] = $partitionStatus;
@@ -65,12 +67,36 @@
 	
 	foreach(array_keys($consumers) as $consumerId)
 	{
-		$consumerInfo = array();
+		$consumerInfo = array(
+		    'active' => false,
+		    'abandoned' => true,
+		);
+		foreach(@$zk->getChildren("/consumers/{$consumerId}/ids") as $process) {
+		    $consumerInfo['process'][$process] = array();
+		}
+
 		foreach(@$zk->getChildren("/consumers/{$consumerId}/offsets") as $topicName) {
-			$consumerTopic = array();		
-			foreach(@$zk->getChildren("/consumers/{$consumerId}/offsets/{$topicName}") as $partitionId) {				
+			$consumerTopic = array(
+			    'active' => false,
+			    'abandoned' => true,
+			    'lagging' => false,
+			);
+			foreach(@$zk->getChildren("/consumers/{$consumerId}/offsets/{$topicName}") as $partitionId) {
 				$consumerPartitionStatus['watermark'] = @$zk->get("/consumers/{$consumerId}/offsets/{$topicName}/$partitionId");
+				$smallest = $topics[$topicName][$partitionId]['smallest'];
+				$largest = $topics[$topicName][$partitionId]['largest'];
+				if ($consumerPartitionStatus['watermark'] < $smallest) {
+				    $consumerPartitionStatus['progress'] = false;
+				} elseif (is_numeric($smallest) && is_numeric($largest)) {
+    				$consumerPartitionStatus['progress'] = round(
+    				    100 * (intval($consumerPartitionStatus['watermark']) - intval($smallest))
+    				    / (intval($largest) - intval($smallest))
+    				    ,2
+				    );
+    				$consumerTopic['lagging'] = $consumerTopic['lagging'] || ($consumerPartitionStatus['progress'] < 90);
+				}
 				$consumerTopic['partition'][$partitionId] = $consumerPartitionStatus;
+				$consumerTopic['abandoned'] = $consumerTopic['abandoned'] && $consumerPartitionStatus['progress'] === false;
 			}
 			$consumerTopicOwners = @$zk->getChildren("/consumers/{$consumerId}/owners/{$topicName}");
 			if ($consumerTopicOwners) {
@@ -78,11 +104,14 @@
 					$consumerTopic['process'][$consumerProcess] = array();
 				}
 			}
+			$consumerTopic['active'] = count($consumerTopic['process']) > 0;
 			$consumerInfo['topics'][$topicName] = $consumerTopic;
+			$consumerInfo['abandoned'] = $consumerInfo['abandoned'] && $consumerTopic['abandoned'];
 		}
-		$consumers[$consumerId] = $consumerInfo;			
-	}	
-	
+		$consumerInfo['active'] = count($consumerInfo['process']) > 0;
+		$consumers[$consumerId] = $consumerInfo;
+	}
+
 	unset($zk);
 	
 ?>
@@ -106,8 +135,8 @@
 						<td>
 							<?php $p=0;foreach($sections[$topicName][$brokerId] as $partition => $status) : ?>
 							<span class="alterColor<?php echo ++$p;?>"><?php echo " [<b>{$status['id']}</b>] ";?>
-							<small><?php echo trim($status['earliest'],'0') .'-';?></small>
-							<small><?php echo trim($status['latest'],0);?></small>
+							<small><?php echo trim($status['smallest'],'0') .'-';?></small>
+							<small><?php echo trim($status['largest'],0);?></small>
 							</span><br/>
 							<?php endforeach;?>
 						</td>
@@ -119,21 +148,45 @@
 		<?php endif;?>
 	</div>
 
-	<ul id='consumerList'>	
-		<?php if ($consumers !== null) :?>
-			<?php foreach($consumers as $consumerId => $info) : ?>
-				<li>
-					'<b><?php echo $consumerId;?></b>' consumes:
-					<?php foreach($info['topics'] as $topicName => $consumerTopic): ?>
-						<b><?php echo $topicName;?></b> {						
+	<table id='consumerList'>	
+	    <tr>
+        <?php if ($consumers !== null) :?>
+	    <td>
+	       <h3>Active consumer groups</h3>
+	       <ul>
+			<?php foreach($consumers as $consumerId => $consumerInfo) if (!$consumerInfo['abandoned']) : ?>
+				<li class="<?php echo $consumerInfo['active'] ? "active" : ($consumerInfo['abandoned'] ? "abandoned" : "inactive");?>">
+					'<b><?php echo $consumerId;?></b>' consumer group of <b><?php echo count($consumerInfo['process'])?></b> active processes consuming:
+					<ul>
+					<?php foreach($consumerInfo['topics'] as $topicName => $consumerTopic): ?>
+						<li class="<?php echo  $consumerTopic['lagging'] ? "lagging" : ($consumerTopic['active'] ? "active" :  "inactive");?>">
+						<b><?php echo $topicName;?></b> {
 						<?php foreach($consumerTopic['partition'] as $partitionId => $consumerPartitionStatus): ?>
-							[<?php echo $partitionId;?>]:<?php echo $consumerPartitionStatus['watermark'] . '/'. trim($topics[$topicName][$partitionId]['latest'],0);?>
+							[<?php echo $partitionId;?>]:<?php echo $consumerPartitionStatus['progress'] ;?> %
 						<?php endforeach;?> 
-						} using <b><?php echo count($consumerTopic['process'])?></b> active processes;						
-					<?php endforeach;?> 
-				</li>		
-			<?php endforeach;?>
-		<?php endif;?>
-	</ul>
+						} using <b><?php echo count($consumerTopic['process'])?></b> active streams
+						</li>
+					<?php endforeach;?>
+					</ul> 
+				</li>
+			<?php endif;?>
+			</ul>
+        </td>
+        <td>
+            <h3 class="abandoned">Abandoned consumer groups</h3>
+            <ul>
+	        <?php foreach($consumers as $consumerId => $consumerInfo) if ($consumerInfo['abandoned']) : ?>
+	        <li class="abandoned">
+	        	'<b><?php echo $consumerId;?></b>' had consumed:
+	        	<?php foreach($consumerInfo['topics'] as $topicName => $consumerTopic): ?>
+	        	  <small><?php echo $topicName;?></small>, 
+	        	<?php endforeach; ?>
+	        </li>
+	        <?php endif;?>
+	        </ul>
+	    </td>
+	    <?php endif;?>
+	    </tr>
+	</table>
 	
 </body>
