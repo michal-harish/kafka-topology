@@ -171,7 +171,7 @@
 	       <ul>
 			<?php foreach($consumers as $consumerId => $consumerInfo) if (!$consumerInfo['abandoned']) : ?>
 				<li class="<?php echo $consumerInfo['active'] ? "active" : "inactive";?>">
-					'<b><?php $consumerId;?></b>' consumer group of <b><?php echo count($consumerInfo['process'])?></b> active processes consuming:
+					'<b><?php echo $consumerId;?></b>' consumer group of <b><?php echo count($consumerInfo['process'])?></b> active processes consuming:
 					<ul>
 					<?php foreach($consumerInfo['topics'] as $topicName => $consumerTopic): ?>
 						<li class="<?php echo  $consumerTopic['lagging'] ? "lagging" : ($consumerTopic['active'] ? "active" :  "inactive");?>">
