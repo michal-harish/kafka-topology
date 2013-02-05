@@ -74,6 +74,7 @@
 	foreach(array_keys($consumers) as $consumerId)
 	{
 		$consumerInfo = array(
+		    'id' => $consumerId,
 		    'active' => false,
 		    'abandoned' => true,
 		    'process' => array(),
@@ -167,25 +168,22 @@
 	    <tr>
         <?php if ($consumers !== null) :?>
 	    <td>
-	       <h3>Active consumer groups</h3>
+	       <h3 class="active" >Active consumer groups</h3>
 	       <ul>
-			<?php foreach($consumers as $consumerId => $consumerInfo) if (!$consumerInfo['abandoned']) : ?>
-				<li class="<?php echo $consumerInfo['active'] ? "active" : "inactive";?>">
-					'<b><?php echo $consumerId;?></b>' consumer group of <b><?php echo count($consumerInfo['process'])?></b> active processes consuming:
-					<ul>
-					<?php foreach($consumerInfo['topics'] as $topicName => $consumerTopic): ?>
-						<li class="<?php echo  $consumerTopic['lagging'] ? "lagging" : ($consumerTopic['active'] ? "active" :  "inactive");?>">
-						<b><?php echo $topicName;?></b> {
-						<?php foreach($consumerTopic['partition'] as $partitionId => $consumerPartitionStatus): ?>
-							[<?php echo $partitionId;?>]<?php echo $consumerPartitionStatus['progress'] ;?>%
-						<?php endforeach;?> 
-						} using <b><?php echo count($consumerTopic['process'])?></b> active streams
-						</li>
-					<?php endforeach;?>
-					</ul> 
+			<?php foreach($consumers as $consumerId => $consumerInfo) if ($consumerInfo['active']) : ?>
+				<li class="active">
+				    <?php renderConsumer($consumerId, $consumerInfo); ?>
 				</li>
 			<?php endif;?>
 			</ul>
+		   <h3 class="inactive" >Inactive consumer groups</h3>
+           <ul>
+            <?php foreach($consumers as $consumerId => $consumerInfo) if (!$consumerInfo['active'] && !$consumerInfo['abandoned']) : ?>
+                <li class="inactive">
+                    <?php renderConsumer($consumerId, $consumerInfo); ?>
+                </li>
+            <?php endif;?>
+            </ul>
         </td>
         <td>
             <h3 class="abandoned">Abandoned consumer groups</h3>
@@ -205,3 +203,20 @@
 	</table>
 	
 </body>
+<?php function renderConsumer($consumerId, array $consumerInfo) { ?>
+    '<b><?php echo $consumerInfo['id'];?></b>' consumer group of 
+    <b><?php echo count($consumerInfo['process'])?></b> active processes consuming:
+    <ul>
+    <?php foreach($consumerInfo['topics'] as $topicName => $consumerTopic): ?>
+        <li class="<?php echo  $consumerTopic['lagging'] ? "lagging" : ($consumerTopic['active'] ? "active" :  "inactive");?>">
+        <small>
+        <b><?php echo $topicName;?></b> {
+        <?php foreach($consumerTopic['partition'] as $partitionId => $consumerPartitionStatus): ?>
+            [<?php echo $partitionId;?>]<?php echo $consumerPartitionStatus['progress'] ;?>%
+        <?php endforeach;?> 
+        } using <b><?php echo count($consumerTopic['process'])?></b> active streams
+        </small>
+        </li>
+    <?php endforeach;?>
+    </ul>
+<?php } ?>
