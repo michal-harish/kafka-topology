@@ -11,3 +11,6 @@ table th, table td { vertical-align: top; border-bottom: 1px solid silver; borde
 .lagging { color: red; }
 .inactive { color: balck; }
 .abandoned { color: silver; }
+
+
+div.clusterInstance { float: left; }

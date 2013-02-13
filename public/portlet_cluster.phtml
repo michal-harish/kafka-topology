@@ -8,7 +8,6 @@
 	$zk = new ZooKeeper($connectionString);
 
 	$consumers =   @$zk->exists('/consumers') ? array_fill_keys(@$zk->getChildren('/consumers'), array()) : array();
-
 	class watcher {
 		private $changedPath = null;
 		public function __construct($zk, array $paths, $min_sleep_sec = 1) {
@@ -22,7 +21,6 @@
 			$this->changedPath = $path;
 		}
 	}
-
 	if (isset($_SERVER['HTTP_PORTLET_AJAX'])) 
 	{
 		$watchPaths = array('/brokers/ids', '/consumers');
@@ -47,6 +45,7 @@
 	}
 	$topics = array();
 
+try {
 	if ($topicNames = @$zk->getChildren('/brokers/topics'))
 	{
 		foreach($topicNames as $topicName)
@@ -70,7 +69,12 @@
 			}
 		}
 	}
-
+} catch (Exception $e) {
+    echo get_class($e) . $e->getMessage();
+}
+    $hasAbandonedConsumers = false;
+    $hasActiveConsumers = false;
+    $hasInactiveConsumers = false;
 	foreach(array_keys($consumers) as $consumerId)
 	{
 		$consumerInfo = array(
@@ -120,7 +124,10 @@
 			}
 			$consumerTopic['active'] = count($consumerTopic['process']) > 0;
 			$consumerInfo['topics'][$topicName] = $consumerTopic;
-			$consumerInfo['abandoned'] = $consumerInfo['abandoned'] && ($consumerTopic['abandoned'] && !$consumerTopic['active']);
+			$consumerInfo['abandoned'] &= $consumerTopic['abandoned'] && !$consumerTopic['active'];
+			$hasAbandonedConsumers |= $consumerInfo['abandoned']; 
+			$hasActiveConsumers |= $consumerTopic['active'];
+			$hasInactiveConsumers |= !$consumerTopic['active'] && !$consumerInfo['abandoned'];
 		}
 		$consumerInfo['active'] = count($consumerInfo['process']) > 0;
 		$consumers[$consumerId] = $consumerInfo;
@@ -167,6 +174,7 @@
 	    <tr>
         <?php if ($consumers !== null) :?>
 	    <td>
+	       <?php if ($hasActiveConsumers) : ?>
 	       <h3 class="active" >Active consumer groups</h3>
 	       <ul>
 			<?php foreach($consumers as $consumerId => $consumerInfo) if ($consumerInfo['active']) : ?>
@@ -174,7 +182,10 @@
 				    <?php renderConsumer($consumerId, $consumerInfo); ?>
 				</li>
 			<?php endif;?>
-			</ul>
+		   </ul>
+		   <?php endif; ?>
+
+           <?php if ($hasInactiveConsumers) : ?>
 		   <h3 class="inactive" >Inactive consumer groups</h3>
            <ul>
             <?php foreach($consumers as $consumerId => $consumerInfo) if (!$consumerInfo['active'] && !$consumerInfo['abandoned']) : ?>
@@ -183,7 +194,10 @@
                 </li>
             <?php endif;?>
             </ul>
+            <?php endif; ?>
+
         </td>
+        <?php if ($hasAbandonedConsumers) : ?>
         <td>
             <h3 class="abandoned">Abandoned consumer groups</h3>
             <ul>
@@ -197,13 +211,14 @@
 	        <?php endif;?>
 	        </ul>
 	    </td>
+	    <?php endif; ?>
 	    <?php endif;?>
 	    </tr>
 	</table>
-	
 </body>
+
 <?php function renderConsumer($consumerId, array $consumerInfo) { ?>
-    '<b><?php echo $consumerInfo['id'];?></b>' consumer group of 
+    '<b><?php echo $consumerInfo['id'];?></b>' : 
     <b><?php echo count($consumerInfo['process'])?></b> active processes consuming:
     <ul>
     <?php foreach($consumerInfo['topics'] as $topicName => $consumerTopic): ?>
@@ -211,9 +226,11 @@
         <small>
         <b><?php echo $topicName;?></b> {
         <?php foreach($consumerTopic['partition'] as $partitionId => $consumerPartitionStatus): ?>
-            [<?php echo $partitionId;?>]<?php echo $consumerPartitionStatus['progress'] ;?>%
+            <span title="(<?php echo $consumerPartitionStatus['watermark'];?>)">
+                [<?php echo $partitionId;?>]<?php echo $consumerPartitionStatus['progress'] ;?>%
+            </span> 
         <?php endforeach;?> 
-        } using <b><?php echo count($consumerTopic['process'])?></b> active streams
+        } / <b><?php echo count($consumerTopic['process'])?></b> active streams
         </small>
         </li>
     <?php endforeach;?>

@@ -8,7 +8,7 @@ if (!$_SERVER['QUERY_STRING']) {
 <html xmlns:g="portal/portlets.xsd">
 <head>
 	<!-- standard html head -->
-	<title>Kafka PHP Monitor</title>
+	<title>Kafka Scanner</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 	<link rel="stylesheet" type="text/css" href="<?php echo $uriBase;?>/main.css" />
 	<g:portlet id="test" url="<?php echo $uriBase;?>/portlet_test.phtml"/>
@@ -26,12 +26,13 @@ if (!$_SERVER['QUERY_STRING']) {
 	<g:portlet id="test" fragment="date"/>
 	 
 	<hr/>	
-	<?php foreach($_GET as $key => $zkConnection) : ?>	
-	<h3>'<?php echo $key?>' kafka cluster</h3>
+	<?php foreach($_GET as $key => $zkConnection) : ?>
+	   <div class="clusterInstance">
+	   <h3>'<?php echo $key?>' kafka cluster</h3>
 
-	<g:portlet class="ajax" id="<?php echo $zkConnection?>" fragment="topicsTable"/>
-	<g:portlet class="ajax" id="<?php echo $zkConnection?>" fragment="consumerList"/>
-
+	   <g:portlet class="ajax" id="<?php echo $zkConnection?>" fragment="topicsTable"/>
+	   <g:portlet class="ajax" id="<?php echo $zkConnection?>" fragment="consumerList"/>
+       </div>
 	<?php endforeach;?>
 </body>
 </html>
