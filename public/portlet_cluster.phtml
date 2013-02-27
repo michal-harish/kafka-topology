@@ -116,25 +116,27 @@ try {
 				$consumerTopic['partition'][$partitionId] = $consumerPartitionStatus;
 				$consumerTopic['abandoned'] = $consumerTopic['abandoned'] && $consumerPartitionStatus['progress'] === false;
 			}
-			$consumerTopicOwners = @$zk->getChildren("/consumers/{$consumerId}/owners/{$topicName}");
-			if ($consumerTopicOwners) {
+
+			try {
+			  $consumerTopicOwners = @$zk->getChildren("/consumers/{$consumerId}/owners/{$topicName}");
+			  if ($consumerTopicOwners) {
 				foreach($consumerTopicOwners as $consumerProcess) {
 					$consumerTopic['process'][$consumerProcess] = array();
 				}
-			}
-			$consumerTopic['active'] = count($consumerTopic['process']) > 0;
+		      }
+			} catch (Exception $e) { echo $e->getMessage(); }
+			$consumerTopic['active'] = isset($consumerTopic['process']) && count($consumerTopic['process']) > 0;
 			$consumerInfo['topics'][$topicName] = $consumerTopic;
 			$consumerInfo['abandoned'] &= $consumerTopic['abandoned'] && !$consumerTopic['active'];
 			$hasAbandonedConsumers |= $consumerInfo['abandoned']; 
-			$hasActiveConsumers |= $consumerTopic['active'];
 			$hasInactiveConsumers |= !$consumerTopic['active'] && !$consumerInfo['abandoned'];
 		}
 		$consumerInfo['active'] = count($consumerInfo['process']) > 0;
+		$hasActiveConsumers |= $consumerInfo['active'];
 		$consumers[$consumerId] = $consumerInfo;
 	}
 
 	unset($zk);
-
 ?>
 <body>
 	<div id='topicsTable'>
