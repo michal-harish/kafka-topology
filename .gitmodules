@@ -1,6 +1,6 @@
 [submodule "gridportal"]
 	path = gridportal
-        url = git://github.com/michal-harish/gridportal.git
+        url = git://github.com/michal-harish/gridportal
 [submodule "kafka-php"]
 	path = kafka-php
-	url = git://github.com/michal-harish/kafka-php.git
+	url = git://github.com/michal-harish/kafka-php
