@@ -11,11 +11,11 @@ if (!$_SERVER['QUERY_STRING']) {
 	<title>Kafka Scanner</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 	<link rel="stylesheet" type="text/css" href="<?php echo $uriBase;?>/main.css" />
-	<g:portlet id="test" url="<?php echo $uriBase;?>/portlet_test.phtml"/>
+	<g:portlet id="test" url="<?php echo $uriBase;?>/portlet_test.php"/>
 	<?php foreach($_GET as $key => $zkConnection) : ?>
 		<g:portlet 
 			id="<?php echo $zkConnection?>" 
-			url="<?php echo $uriBase;?>/portlet_cluster.phtml?<?php echo $zkConnection?>"
+			url="<?php echo $uriBase;?>/portlet_cluster.php?<?php echo $zkConnection?>"
 		/>
 	<?php endforeach ?>
 </head>

@@ -32,7 +32,7 @@
 	}
 
 	$brokers = array();
-	if ($brokerIds = @$zk->getChildren('/brokers/ids'))
+	if ($brokerIds = $zk->getChildren('/brokers/ids'))
 	{
 		foreach($brokerIds as $brokerId)
 		{
@@ -55,16 +55,20 @@ try {
 				$brokerPartitionCount = @$zk->get("/brokers/topics/{$topicName}/{$brokerId}");
 				for($partition=0; $partition<$brokerPartitionCount; $partition++)
 				{
-					$partitionId = "{$brokerId}-{$partition}";
-					$smallest = array_shift($kafkaConsumers[$brokerId]->offsets($topicName,$partition, \Kafka\Kafka::OFFSETS_EARLIEST));
-					$largest = array_shift($kafkaConsumers[$brokerId]->offsets($topicName,$partition, \Kafka\Kafka::OFFSETS_LATEST));
-					$partitionStatus = array(
-						'id' => $partitionId,
-						'smallest' => $smallest->__toString(),
-					    'largest' => $largest->__toString(),
-					);
-					$topics[$topicName][$partitionId] = $partitionStatus;
-					$sections[$topicName][$brokerId][$partition] = $partitionStatus;
+					try {
+						$partitionId = "{$brokerId}-{$partition}";
+						$smallest = array_shift($kafkaConsumers[$brokerId]->offsets($topicName,$partition, \Kafka\Kafka::OFFSETS_EARLIEST));
+						$largest = array_shift($kafkaConsumers[$brokerId]->offsets($topicName,$partition, \Kafka\Kafka::OFFSETS_LATEST));
+						$partitionStatus = array(
+							'id' => $partitionId,
+							'smallest' => $smallest->__toString(),
+						    'largest' => $largest->__toString(),
+						);
+						$topics[$topicName][$partitionId] = $partitionStatus;
+						$sections[$topicName][$brokerId][$partition] = $partitionStatus;
+					} catch (\Kafka\Exception $e) {
+						continue;
+					}
 				}
 			}
 		}
@@ -90,6 +94,7 @@ try {
 		}
 
 		foreach(@$zk->getChildren("/consumers/{$consumerId}/offsets") as $topicName) {
+			if (!isset($topics[$topicName])) continue;
 			$consumerTopic = array(
 			    'active' => false,
 			    'abandoned' => true,
