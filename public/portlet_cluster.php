@@ -48,6 +48,7 @@
 try {
 	if ($topicNames = @$zk->getChildren('/brokers/topics'))
 	{
+		sort($topicNames);
 		foreach($topicNames as $topicName)
 		{
 			foreach($brokers as $brokerId => $brokerName)
@@ -163,10 +164,12 @@ try {
 						<td>
 							<?php $p=0;if (isset($sections[$topicName][$brokerId])) 
 							foreach($sections[$topicName][$brokerId] as $partition => $status) : ?>
-							<span class="alterColor<?php echo ++$p;?>"><?php echo " [<b>{$status['id']}</b>] ";?>
-							<small><?php echo trim($status['smallest'],'0') .'-';?></small>
-							<small><?php echo trim($status['largest'],0);?></small>
-							</span><br/>
+							<small class="alterColor<?php echo ++$p;?>"><?php 
+								$id = str_replace("-", "&nbsp;-&nbsp;", $status['id']);
+								echo " [&nbsp;<b>{$id}</b>&nbsp;]&nbsp;"
+									.trim($status['smallest'],'0') .'&nbsp;-&nbsp;'
+									.trim($status['largest'],0);?>
+							</small><br/>
 							<?php endforeach;?>
 						</td>
 						<?php endforeach; ?>
